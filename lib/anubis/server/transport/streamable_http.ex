@@ -248,14 +248,23 @@ defmodule Anubis.Server.Transport.StreamableHTTP do
   def handle_call({:register_sse_handler, session_id, pid}, _from, state) do
     ref = Process.monitor(pid)
 
+    # Check if this is the first SSE handler being registered
+    was_empty = Enum.empty?(state.sse_handlers)
     sse_handlers = Map.put(state.sse_handlers, session_id, {pid, ref})
+    new_state = %{state | sse_handlers: sse_handlers}
+
+    # Start keepalive timer when first handler is registered
+    # (fixes bug where keepalive was never scheduled because init has no handlers)
+    if was_empty and should_keepalive?(new_state) do
+      schedule_keepalive(new_state.keepalive_interval)
+    end
 
     Logging.transport_event("sse_handler_registered", %{
       session_id: session_id,
       handler_pid: inspect(pid)
     })
 
-    {:reply, :ok, %{state | sse_handlers: sse_handlers}}
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
