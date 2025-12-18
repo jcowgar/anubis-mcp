@@ -41,6 +41,39 @@ defmodule Anubis.MCP.ErrorTest do
       assert error.message == "Invalid params"
     end
 
+    test "protocol/2 creates invalid params error with detailed message from data" do
+      error = Error.protocol(:invalid_params, %{message: "fields: expected map, got string"})
+      assert error.code == -32_602
+      assert error.reason == :invalid_params
+      assert error.message == "fields: expected map, got string"
+      # message should be removed from data to avoid duplication
+      assert error.data == %{}
+    end
+
+    test "protocol/2 creates invalid params error with detailed message and extra data" do
+      error =
+        Error.protocol(:invalid_params, %{
+          message: "fields: expected map, got string",
+          field: "fields",
+          expected: "map"
+        })
+
+      assert error.code == -32_602
+      assert error.reason == :invalid_params
+      assert error.message == "fields: expected map, got string"
+      # message removed, other data preserved
+      assert error.data == %{field: "fields", expected: "map"}
+    end
+
+    test "protocol/2 creates invalid params error with non-string message in data uses default" do
+      # When message is not a string, fall back to default behavior
+      error = Error.protocol(:invalid_params, %{message: 123})
+      assert error.code == -32_602
+      assert error.reason == :invalid_params
+      assert error.message == "Invalid params"
+      assert error.data == %{message: 123}
+    end
+
     test "protocol/2 creates internal error" do
       error = Error.protocol(:internal_error)
       assert error.code == -32_603

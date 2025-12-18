@@ -119,6 +119,15 @@ defmodule Anubis.MCP.Error do
     }
   end
 
+  def protocol(:invalid_params, %{message: message} = data) when is_binary(message) do
+    %__MODULE__{
+      code: @invalid_params,
+      reason: :invalid_params,
+      message: message,
+      data: Map.delete(data, :message)
+    }
+  end
+
   def protocol(:invalid_params, data) do
     %__MODULE__{
       code: @invalid_params,
