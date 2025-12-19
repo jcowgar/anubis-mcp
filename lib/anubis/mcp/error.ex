@@ -42,6 +42,7 @@ defmodule Anubis.MCP.Error do
           data: map()
         }
 
+  @derive {JSON.Encoder, only: [:code, :reason, :message, :data]}
   defstruct [:code, :reason, :message, data: %{}]
 
   # JSON-RPC 2.0 standard error codes
